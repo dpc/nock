@@ -1,3 +1,5 @@
+#![feature(globs)]
+
 extern crate gmp;
 
 use std::num::{ zero, one, from_u64, ToPrimitive };
@@ -151,5 +153,36 @@ pub fn tar(n: Noun) -> Noun {
         Cell(_, _) => panic!("tar on invalid Cell"),
         /// 39 ::    *a               *a
         Atom(_a) => panic!("tar on Atom")
+    }
+}
+
+
+mod bench {
+    extern crate test;
+    use super::*;
+    use self::test::Bencher;
+
+    #[bench]
+    fn simple_eval(b: &mut Bencher) {
+        b.iter(|| {
+            let n = tar(
+                Cell(
+                    box Cell(
+                        box Atom(Native(19)),
+                        box Atom(Native(42))
+                    ),
+                    box Cell(
+                        box Cell(
+                            box Atom(Native(0)),
+                            box Atom(Native(3))
+                        ),
+                        box Cell(
+                            box Atom(Native(0)),
+                            box Atom(Native(2))
+                        )
+                    )
+               )
+            );
+        });
     }
 }
