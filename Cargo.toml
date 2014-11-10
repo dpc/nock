@@ -1,0 +1,8 @@
+[package]
+
+name = "nock"
+version = "0.0.1"
+authors = ["Till Hoeppner <till@hoeppner.ws>"]
+
+[dependencies.rust-gmp]
+git = "https://github.com/hoeppnertill/rust-gmp"
