@@ -35,7 +35,7 @@ const YES: Noun = Atom(Native(0));
 const NO: Noun = Atom(Native(1));
 
 /// 5  ::    nock(a)          *a
-//pub fn nock(n: Noun) -> Noun { tar(n) }
+pub fn nock(n: Noun) -> Noun { tar(n) }
 
 /// 6  ::    [a b c]          [a [b c]]
 /// 7  ::
@@ -70,6 +70,7 @@ pub fn tis(n: Noun) -> Noun {
     }
 }
 
+
 /// 16 ::    /[1 a]           a
 /// 17 ::    /[2 a b]         a
 /// 18 ::    /[3 a b]         b
@@ -81,8 +82,8 @@ pub fn fas(n: Noun) -> Noun {
         Cell(n, a) => match *n {
             Atom(ref n) => match *a {
                 Atom(ref a) if n.equiv(1) => Atom(a.clone()),
-                Cell(ref a, ref _b) if n.equiv(2) => *a.clone(),
-                Cell(ref _a, ref b) if n.equiv(3) => *b.clone(),
+                Cell(box ref a, ref _b) if n.equiv(2) => (*a).clone(),
+                Cell(ref _a, box ref b) if n.equiv(3) => (*b).clone(),
                 Atom(b) => match n {
                     &Native(n) if n % 2 == 0 => fas(Cell(
                             box Atom(Native(2)),
@@ -102,25 +103,53 @@ pub fn fas(n: Noun) -> Noun {
 }
 
 
-/*
-23 ::    *[a [b c] d]     [*[a b c] *[a d]]
-24 ::
-25 ::    *[a 0 b]         /[b a]
-26 ::    *[a 1 b]         b
-27 ::    *[a 2 b c]       *[*[a b] *[a c]]
-28 ::    *[a 3 b]         ?*[a b]
-29 ::    *[a 4 b]         +*[a b]
-30 ::    *[a 5 b]         =*[a b]
-31 ::
-32 ::    *[a 6 b c d]     *[a 2 [0 1] 2 [1 c d] [1 0] 2 [1 2 3] [1 0] 4 4 b]
-33 ::    *[a 7 b c]       *[a 2 b 1 c]
-34 ::    *[a 8 b c]       *[a 7 [[7 [0 1] b] 0 1] c]
-35 ::    *[a 9 b c]       *[a 7 c 2 [0 1] 0 b]
-36 ::    *[a 10 [b c] d]  *[a 8 c 7 [0 3] d]
-37 ::    *[a 10 b c]      *[a c]
-38 ::
-39 ::    *a               *a
-*/
-
-
-
+pub fn tar(n: Noun) -> Noun {
+    // I'm so sorry.
+    match n {
+        /// 23 ::    *[a [b c] d]     [*[a b c] *[a d]]
+        Cell(ref a, box Cell(box Cell(ref b, ref c), ref d)) =>
+            Cell(box tar(Cell((*a).clone(), box Cell((*b).clone(), (*c).clone()))),
+                 box tar(Cell((*a).clone(), (*d).clone()))),
+        Cell(ref a, box Cell(ref n, box ref b)) => match *n {
+            box Atom(ref n) => match b {
+                /// 25 ::    *[a 0 b]         /[b a]
+                _ if n.equiv(0) => fas(Cell(box b.clone(), a.clone())),
+                /// 26 ::    *[a 1 b]         b
+                _ if n.equiv(1) => (*b).clone(),
+                /// 27 ::    *[a 2 b c]       *[*[a b] *[a c]]
+                &Cell(ref b, ref c) if n.equiv(2) => tar(Cell(
+                    box tar(Cell((*a).clone(), (*b).clone())),
+                    box tar(Cell((*a).clone(), (*c).clone())))),
+                /// 28 ::    *[a 3 b]         ?*[a b]
+                _ if n.equiv(3) => wut(tar(Cell((*a).clone(), box b.clone()))),
+                /// 29 ::    *[a 4 b]         +*[a b]
+                _ if n.equiv(4) => lus(tar(Cell((*a).clone(), box b.clone()))),
+                /// 30 ::    *[a 5 b]         =*[a b]
+                _ if n.equiv(5) => tis(tar(Cell((*a).clone(), box b.clone()))),
+                /// 32 ::    *[a 6 b c d]     *[a 2 [0 1] 2 [1 c d] [1 0] 2 [1 2 3] [1 0] 4 4 b]
+                &Cell(ref b, box ref e) if n.equiv(6) => match e {
+                    &Cell(ref c, ref d) => tar(Cell((*a).clone(), box Cell(box Atom(Native(2)), box Cell(box Cell(box Atom(Native(0)), box Atom(Native(1))), box Cell(box Atom(Native(2)), box Cell(box Cell(box Atom(Native(1)), box Cell((*c).clone(), (*d).clone())), box Cell(box Cell(box Atom(Native(1)), box Atom(Native(0))), box Cell(box Atom(Native(2)), box Cell(box Cell(box Atom(Native(1)), box Cell(box Atom(Native(2)), box Atom(Native(3)))), box Cell(box Cell(box Atom(Native(1)), box Atom(Native(0))), box Cell(box Atom(Native(4)), box Cell(box Atom(Native(4)), (*b).clone())))))))))))),
+                    &Atom(_) => panic!("I lost track...")
+                },
+                /// 33 ::    *[a 7 b c]       *[a 2 b 1 c]
+                &Cell(ref b, ref c) if n.equiv(7) => tar(Cell((*a).clone(), box Cell(box Atom(Native(2)), box Cell((*b).clone(), box Cell(box Atom(Native(1)), (*c).clone()))))),
+                /// 34 ::    *[a 8 b c]       *[a 7 [[7 [0 1] b] 0 1] c]
+                &Cell(ref b, ref c) if n.equiv(8) => tar(Cell((*a).clone(), box Cell(box Atom(Native(7)), box Cell(box Cell(box Cell(box Atom(Native(7)), box Cell(box Cell(box Atom(Native(0)), box Atom(Native(1))), (*b).clone())), box Cell(box Atom(Native(0)), box Atom(Native(1)))), (*c).clone())))),
+                /// 35 ::    *[a 9 b c]       *[a 7 c 2 [0 1] 0 b]
+                &Cell(ref b, ref c) if n.equiv(9) => tar(Cell((*a).clone(), box Cell(box Atom(Native(7)), box Cell((*c).clone(), box Cell(box Atom(Native(2)), box Cell(box Cell(box Atom(Native(0)), box Atom(Native(1))), box Cell(box Atom(Native(0)), (*b).clone()))))))),
+                /// 36 ::    *[a 10 [b c] d]  *[a 8 c 7 [0 3] d]
+                &Cell(box ref e, ref d) if n.equiv(10) => match e {
+                    &Cell(ref _b, ref c) => tar(Cell((*a).clone(), box Cell(box Atom(Native(8)), box Cell((*c).clone(), box Cell(box Atom(Native(7)), box Cell(box Cell(box Atom(Native(0)), box Atom(Native(3))), (*d).clone())))))),
+                    &Atom(_) => panic!("I lost track...")
+                },
+                /// 37 ::    *[a 10 b c]      *[a c]
+                &Cell(ref _b, ref c) if n.equiv(10) => tar(Cell((*a).clone(), (*c).clone())),
+                _ => panic!("tar on invalid Cell")
+            },
+            box Cell(ref _a, ref _b) => panic!("tar on Cell with invalid arguments")
+        },
+        Cell(_, _) => panic!("tar on invalid Cell"),
+        /// 39 ::    *a               *a
+        Atom(_a) => panic!("tar on Atom")
+    }
+}
