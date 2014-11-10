@@ -25,11 +25,11 @@ impl Number {
 }
 
 /// 1  ::    A noun is an atom or a cell.
-/// 2  ::    An atom is a natural number.
-/// 3  ::    A cell is an ordered pair of nouns.
 #[deriving(Show, PartialEq, Eq, Clone, Hash)]
 pub enum Noun {
+    /// 2  ::    An atom is a natural number.
     Atom(Number),
+    /// 3  ::    A cell is an ordered pair of nouns.
     Cell(Box<Noun>, Box<Noun>)
 }
 
@@ -39,22 +39,20 @@ const NO: Noun = Atom(Native(1));
 /// 5  ::    nock(a)          *a
 pub fn nock(n: Noun) -> Noun { tar(n) }
 
-/// 6  ::    [a b c]          [a [b c]]
-/// 7  ::
-/// 8  ::    ?[a b]           0
-/// 9  ::    ?a               1
 pub fn wut(n: Noun) -> Noun {
     match n {
+        /// 8  ::    ?[a b]           0
         Cell(_a, _b) => YES,
+        /// 9  ::    ?a               1
         Atom(_a) => NO
     }
 }
 
-/// 10 ::    +[a b]           +[a b]
-/// 11 ::    +a               1 + a
 pub fn lus(n: Noun) -> Noun {
     match n {
+        /// 10 ::    +[a b]           +[a b]
         Cell(_a, _b) => panic!("lus on Cell"),
+        /// 11 ::    +a               1 + a
         Atom(a) => match a {
             Native(n) => Atom(Native(1 + n)),
             Bignum(n) => Atom(Bignum(one::<Mpz>() + n))
@@ -62,34 +60,33 @@ pub fn lus(n: Noun) -> Noun {
     }
 }
 
-/// 12 ::    =[a a]           0
-/// 13 ::    =[a b]           1
-/// 14 ::    =a               =a
 pub fn tis(n: Noun) -> Noun {
     match n {
+        /// 12 ::    =[a a]           0
+        /// 13 ::    =[a b]           1
         Cell(a, b) => if a == b { YES } else { NO },
+        /// 14 ::    =a               =a
         Atom(_a) => panic!("tis on Atom")
     }
 }
 
 
-/// 16 ::    /[1 a]           a
-/// 17 ::    /[2 a b]         a
-/// 18 ::    /[3 a b]         b
-/// 19 ::    /[(a + a) b]     /[2 /[a b]]
-/// 20 ::    /[(a + a + 1) b] /[3 /[a b]]
-/// 21 ::    /a               /a
 pub fn fas(n: Noun) -> Noun {
     match n {
         Cell(n, a) => match *n {
             Atom(ref n) => match *a {
+                /// 16 ::    /[1 a]           a
                 Atom(ref a) if n.equiv(1) => Atom(a.clone()),
+                /// 17 ::    /[2 a b]         a
                 Cell(box ref a, ref _b) if n.equiv(2) => (*a).clone(),
+                /// 18 ::    /[3 a b]         b
                 Cell(ref _a, box ref b) if n.equiv(3) => (*b).clone(),
                 Atom(b) => match n {
+                    /// 19 ::    /[(a + a) b]     /[2 /[a b]]
                     &Native(n) if n % 2 == 0 => fas(Cell(
                             box Atom(Native(2)),
                             box Cell(box Atom(Native(n / 2)), box Atom(b)))),
+                    /// 20 ::    /[(a + a + 1) b] /[3 /[a b]]
                     &Bignum(ref n) if *n % from_u64::<Mpz>(2).unwrap() == zero() => fas(Cell(
                             box Atom(Native(2)),
                             box Cell(box Atom(Bignum(*n / from_u64::<Mpz>(2).unwrap())),
@@ -100,6 +97,7 @@ pub fn fas(n: Noun) -> Noun {
             },
             Cell(_, _) => panic!("fas with Cell subject")
         },
+        /// 21 ::    /a               /a
         Atom(_a) => panic!("fas on Atom")
     }
 }
